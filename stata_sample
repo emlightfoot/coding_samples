@@ -1,30 +1,11 @@
-********************************************************************************
-************************** ECON 470. SPRING 2022 *******************************
-************************ ASSIGNMENT 5. STARTER CODE ****************************
-********************************************************************************
 
 clear all
 set more off
 
-* These next lines will set the directories appropriately when this program is 
-*run on my machine or the TA's machine
-if c(username)=="jlindo" {
-    cd "~/Dropbox/Teaching/Program Evaluation/Program Evaluation Assignments/Fall 2020"
-}
- if c(username)=="zhong" {
-	cd "Z:\Class\ECON 470_Spring 2023\Data Analysis Assignments\Assignment6"
-}
-
-
-* This next line of code changes where STATA will look for files and save files
-* YOU NEED TO EDIT THIS NEXT LINE
 cd "C:\econ 470"
-
 
 *Import dataset
 import excel "FirmsSubsidy.xlsx", firstrow
-
-
 
 *part a
 replace score=. if score==9999
