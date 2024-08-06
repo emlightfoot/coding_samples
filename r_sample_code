@@ -1,8 +1,10 @@
-####----STEP ONE----
-# read in raw firm data, output business datasets for the years 2013-2019
-# generate binary franchise variable, round Latitude/Longitude to two decimal places
 library(tidyverse)
+library(fixest)
 setwd("C:/Users/emily/Downloads/erp_research")
+
+####----STEP ONE----
+# Read in raw firm data, output business datasets for the years 2013-2019
+# Generate binary franchise variable, round Latitude/Longitude to two decimal places
 tx_zip_prefix = c(770, 772, 750, 752, 753) # 77 is houston, 75 is dallas
 data_3 <- read_csv("BusinessData2013.csv", col_types = cols_only(Company = "c",
                                                                     ZipCode = "c",
@@ -124,17 +126,17 @@ data_9 <- read_csv("BusinessData2019.csv", col_types = cols_only(Company = "c",
   select(-city, -Subsidiary_Number, -Parent_Number)
 
 ####----STEP TWO----
-#create NewID variable which is a unique identifier per firm across all years, add this variable to dfs
-#input: 7 dfs of yearly firm data
-#output: 7 dfs of the yearly firm data PLUS each individual firm's respective NewID
+# Create NewID variable which is a unique identifier per firm across all years, add this variable to dfs
+# Input: 7 dfs of yearly firm data
+# Output: 7 dfs of the yearly firm data PLUS each individual firm's respective NewID
 
-#create a NAICS_sector var since some companies' NAICS code slightly change across years, but sector should remain the same
+# Create a NAICS_sector var since some companies' NAICS code slightly change across years, but sector should remain the same
 generate_NAICS <- function(df){
   df <- df %>%
     mutate(NAICS_sector = str_sub(Primary_NAICS_Code, end = 3))
 }
 
-#round lat and long to account for them changing (slightly) over the years for a single firm
+# Round lat and long to account for them changing (slightly) over the years for a single firm
 generate_round <- function(df){
   df <- df %>%
     mutate(LatRound = round(Latitude, digits = 1)) %>%
@@ -151,13 +153,12 @@ data_9 <- generate_NAICS(data_9) %>% generate_round()
 
 mergedata <- rbind(data_3,data_4,data_5, data_6, data_7, data_8, data_9)
 
-#create unique NewID based off a company's latitude, longitude, naics sector, zip code, and company name
+# Create unique NewID based off a company's latitude, longitude, naics sector, zip code, and company name
 mergedata <- mergedata %>%
   group_by(LatRound,LongRound,NAICS_sector, ZipCode, Company) %>%
   mutate(NewID = cur_group_id())
-df #idk what this does should probably see about that
 
-#merge the NewIDs with datasets
+# Merge the NewIDs with datasets
 df_3 <- data_3 %>%
   inner_join(mergedata, by =c("Company",
                               "ZipCode",
@@ -289,7 +290,7 @@ df_8 <- df_8 %>%
 
 df_9 <- df_9 %>%
   semi_join(pre_harvey, by = "NewID")
-#filter for unique
+# Filter for unique businesses only
 df_3 <- df_3[!duplicated(df_3$NewID), ]
 df_4 <- df_4[!duplicated(df_4$NewID), ]
 df_5 <- df_5[!duplicated(df_5$NewID), ]
@@ -298,10 +299,10 @@ df_7 <- df_7[!duplicated(df_7$NewID), ]
 df_8 <- df_8[!duplicated(df_8$NewID), ]
 df_9 <- df_9[!duplicated(df_9$NewID), ]
 ##----STEP 3----
-#input: df_x which includes firm data and unique id
-#output: full_dfs with their binary exit variable
+# Input: df_x which includes firm data and unique id
+# Output: full_dfs with their binary exit variable
 
-#create a binary exit variable; the last year a firm is present in the data: exit = 1
+# Create a binary exit variable; the last year a firm is present in the data: exit = 1
 join_firm <- function(df_1, df_2){
   
   bothdata <- df_1 %>%
@@ -312,7 +313,6 @@ join_firm <- function(df_1, df_2){
     mutate(exit = ifelse(NewID %in% continuingstores,0,1))
 }
 
-#antijoin (same as join_firm) but works quicker given the number of observations
 anti_join_firm <- function(df_1, df_2){
   
   bothdata <- df_1 %>%
@@ -338,11 +338,11 @@ full_df <- rbind(full_df3,
                  full_df8)
 
 ##----DESCRIPTIVE STATS----
-# code used to gather some descriptive statistics to ensure data is clean
+# Code used to gather some descriptive statistics to ensure data is clean
 full_df3 %>% count(exit)
 data_3 %>% mutate(Primary_NAICS_Code = str_sub(Primary_NAICS_Code, end = 2)) %>% filter(Primary_NAICS_Code == 92)
 ##----WATER LVL MERGE----
-# merge FEMA Hurricane Harvey flood water level data with firm dataset
+# Merge FEMA Hurricane Harvey flood water level data with firm dataset
 water <- read.csv("cleaned_water_lvls.csv") %>%
   select(-X, -year, -Address_Line_1)
   
@@ -362,7 +362,7 @@ firm_nonwater_df <- full_df %>%
 
 water_lvl_df <- rbind(firm_nonwater_df,firm_water_df)
 ##----REGRESSIONS----
-#create datasets for restaurant, gas station, and grocery store
+# Create datasets for restaurant, gas station, and grocery store
 restaurant_df <- water_lvl_df %>%
   mutate(NAICS_sector = str_sub(Primary_NAICS_Code, end = 3)) %>%
   filter(NAICS_sector == 722)
@@ -379,7 +379,7 @@ grocery_df$Primary_NAICS_Code <- factor(grocery_df$Primary_NAICS_Code)
 grocery_df$if_2017 <- factor(grocery_df$if_2017)
 grocery_df$year <- factor(grocery_df$year)
 
-# create dataframe for restaurant and grocery store sectors
+# Create dataframe for restaurant and grocery store sectors
 r_df <- rbind(restaurant_df, grocery_df)
 
 #01
@@ -394,7 +394,7 @@ reg4 <- feols(exit ~ water_lvl, water_lvl_df)
 #04
 reg5 <- feols(exit ~ water_lvl |Primary_NAICS_Code, water_lvl_df)
 
-#sectors
+# Regressions by sector
 
 #03
 reg6 <- feols(exit ~ water_lvl, full_df)
@@ -402,5 +402,5 @@ reg6 <- feols(exit ~ water_lvl, full_df)
 #03
 reg7 <- feols(exit ~ water_lvl, grocery_df)
 
-#export regression table
+# Export regression table
 etable(reg1, reg2, tex= T)
