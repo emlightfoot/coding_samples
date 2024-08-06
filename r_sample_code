@@ -298,7 +298,7 @@ df_6 <- df_6[!duplicated(df_6$NewID), ]
 df_7 <- df_7[!duplicated(df_7$NewID), ]
 df_8 <- df_8[!duplicated(df_8$NewID), ]
 df_9 <- df_9[!duplicated(df_9$NewID), ]
-##----STEP 3----
+##----STEP THREE----
 # Input: df_x which includes firm data and unique id
 # Output: full_dfs with their binary exit variable
 
