@@ -1,0 +1,194 @@
+********************************************************************************
+************************** ECON 470. SPRING 2022 *******************************
+************************ ASSIGNMENT 5. STARTER CODE ****************************
+********************************************************************************
+
+clear all
+set more off
+
+* These next lines will set the directories appropriately when this program is 
+*run on my machine or the TA's machine
+if c(username)=="jlindo" {
+    cd "~/Dropbox/Teaching/Program Evaluation/Program Evaluation Assignments/Fall 2020"
+}
+ if c(username)=="zhong" {
+	cd "Z:\Class\ECON 470_Spring 2023\Data Analysis Assignments\Assignment6"
+}
+
+
+* This next line of code changes where STATA will look for files and save files
+* YOU NEED TO EDIT THIS NEXT LINE
+cd "C:\econ 470"
+
+
+*Import dataset
+import excel "FirmsSubsidy.xlsx", firstrow
+
+
+
+*part a
+replace score=. if score==9999
+replace employ5=. if employ5==9999
+replace revrate5=. if revrate5==9999
+replace industry=. if industry==9999
+
+*part b
+scatter score employ5 
+graph export scatteremploy1.pdf, replace
+/*
+Based on the scatterplot, there is a clear cutoff point at the 750 score. Firms having a score less than 750 had a range of employees approximately 20-70, whereas those at and above the 750 score has a range of employees approximately 20-95. This shows a positive correlation between having a score greater than or equal to 750 and number of employees.
+*/
+
+save "datafirms.dta", replace
+gen bin = 0
+replace bin = 1 if (score>=500 & score<550)
+replace bin = 2 if (score>=550 & score<600)
+replace bin = 3 if (score>=600 & score<650)
+replace bin = 4 if (score>=650 & score<700)
+replace bin = 5 if (score>=700 & score<750)
+replace bin = 6 if (score>=750 & score<800)
+replace bin = 7 if (score>=800 & score<850)
+replace bin = 8 if (score>=850 & score<900)
+replace bin = 9 if (score>=900 & score<950)
+replace bin = 10 if (score>=950 & score<=1000)
+drop if score == .
+collapse (mean) revrate5, by(bin)
+twoway (bar revrate5 bin)
+graph export barrevrate.pdf, replace
+clear
+use "datafirms.dta", clear
+/*
+Based on the bar graph, those who had a score greater than or equal to 750 had a higher average annual revenue growth rate than those less than a score of 750. This demonstates a positive correlation between having a score greater than or equal to 750 and average annual revenue growth rate.
+*/
+
+*part c
+histogram score, bin(10) frequency xline(750)
+graph export 10binhistogram.pdf, replace
+histogram score, bin(20) frequency xline(750)
+graph export 20binhistogram.pdf, replace
+/*
+There is a jump in the score in the 10 bin histrogram; however, this jump is minimized in the 20 bin histogram. Also, there are jumps across other score, such as at 600; therefore, I conclude that the distribution of scores is smooth at 750.
+*/
+
+*part d
+gen above750=(score>=750)
+graph bar (mean) ba_own, by(above750)
+graph export barba.pdf, replace
+graph bar (mean) fem_own, by(above750)
+graph export barfem.pdf, replace
+/*
+Based on the two graphs generated, I would say that there are not significant differences between the scores across having a firm owner with at least a bachelor's degree and a female-owned company--specifically looking at those above and below 750. Therefore, I conclude that they are smooth across the cutoff.
+*/
+
+generate normalizedscore=score-750
+generate within100=abs(normalizedscore)<=100
+generate within50=abs(normalizedscore)<=50
+generate normaltreated=above750*normalizedscore
+
+regress ba_own above750 normalizedscore normaltreated if within100==1
+/*
+---------------------------------------------------------------------------------
+         ba_own | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+----------------+----------------------------------------------------------------
+       above750 |   .0118021   .0998551     0.12   0.906    -.1845103    .2081144
+normalizedscore |   .0005603   .0012181     0.46   0.646    -.0018345    .0029551
+  normaltreated |   .0007929   .0017203     0.46   0.645    -.0025892    .0041749
+          _cons |   .4574203   .0701627     6.52   0.000     .3194823    .5953583
+---------------------------------------------------------------------------------
+*/
+regress ba_own above750 normalizedscore normaltreated if within50==1
+/*
+---------------------------------------------------------------------------------
+         ba_own | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+----------------+----------------------------------------------------------------
+       above750 |   .1575577   .1406017     1.12   0.264    -.1196944    .4348097
+normalizedscore |  -.0015386   .0032568    -0.47   0.637    -.0079607    .0048834
+  normaltreated |  -.0018047   .0047383    -0.38   0.704     -.011148    .0075387
+          _cons |   .4077015   .1007726     4.05   0.000     .2089884    .6064146
+---------------------------------------------------------------------------------
+*/
+regress fem_own above750 normalizedscore normaltreated if within100==1
+/*
+
+---------------------------------------------------------------------------------
+        fem_own | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+----------------+----------------------------------------------------------------
+       above750 |   .0118021   .0998551     0.12   0.906    -.1845103    .2081144
+normalizedscore |   .0005603   .0012181     0.46   0.646    -.0018345    .0029551
+  normaltreated |   .0007929   .0017203     0.46   0.645    -.0025892    .0041749
+          _cons |   .4574203   .0701627     6.52   0.000     .3194823    .5953583
+---------------------------------------------------------------------------------
+*/
+regress fem_own above750 normalizedscore normaltreated if within50==1
+/*
+---------------------------------------------------------------------------------
+        fem_own | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+----------------+----------------------------------------------------------------
+       above750 |   .1575577   .1406017     1.12   0.264    -.1196944    .4348097
+normalizedscore |  -.0015386   .0032568    -0.47   0.637    -.0079607    .0048834
+  normaltreated |  -.0018047   .0047383    -0.38   0.704     -.011148    .0075387
+          _cons |   .4077015   .1007726     4.05   0.000     .2089884    .6064146
+---------------------------------------------------------------------------------
+*/
+
+/*
+Based on the regression results, I believe that the results are not dependent upon the bandwith, and that they also pass the balanced covariates test as the regression of fem_own and ba_own for the two bandwiths have the same coefficients when looking at the bandwiths together (i.e. 100 with 100, and 50 with 50)
+*/
+
+*part e
+regress employ5 above750 normalizedscore normaltreated if within100==1
+/*
+---------------------------------------------------------------------------------
+        employ5 | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+----------------+----------------------------------------------------------------
+       above750 |   5.611348   3.497854     1.60   0.109    -1.265499     12.4882
+normalizedscore |   .0183383   .0428843     0.43   0.669    -.0659731    .1026496
+  normaltreated |   .0543166   .0604067     0.90   0.369     -.064444    .1730773
+          _cons |   48.01892   2.462324    19.50   0.000     43.17795     52.8599
+---------------------------------------------------------------------------------
+*/
+regress employ5 above750 normalizedscore normaltreated if within50==1
+/*
+---------------------------------------------------------------------------------
+        employ5 | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+----------------+----------------------------------------------------------------
+       above750 |   8.645312   4.806215     1.80   0.074     -.832335    18.12296
+normalizedscore |  -.0817595   .1116953    -0.73   0.465    -.3020177    .1384987
+  normaltreated |   .1176878    .162206     0.73   0.469    -.2021754     .437551
+          _cons |   45.76792   3.445363    13.28   0.000     38.97381    52.56202
+---------------------------------------------------------------------------------
+*/
+regress revrate5 above750 normalizedscore normaltreated if within100==1
+/*
+---------------------------------------------------------------------------------
+       revrate5 | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+----------------+----------------------------------------------------------------
+       above750 |   5.480082   .6019284     9.10   0.000      4.29668    6.663485
+normalizedscore |  -.0142737   .0073798    -1.93   0.054    -.0287825     .000235
+  normaltreated |   .0109066   .0103951     1.05   0.295    -.0095303    .0313436
+          _cons |   4.913322   .4237291    11.60   0.000     4.080262    5.746381
+---------------------------------------------------------------------------------
+*/
+regress revrate5 above750 normalizedscore normaltreated if within50==1
+/*
+---------------------------------------------------------------------------------
+       revrate5 | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+----------------+----------------------------------------------------------------
+       above750 |    5.62665   .8281078     6.79   0.000     3.993658    7.259643
+normalizedscore |  -.0286465    .019245    -1.49   0.138    -.0665969    .0093038
+  normaltreated |   .0392928    .027948     1.41   0.161    -.0158194     .094405
+          _cons |   4.483682   .5936338     7.55   0.000     3.313062    5.654302
+---------------------------------------------------------------------------------
+*/
+
+*part f
+/*
+Based on the results from the 4 regressions above, it is clear that the subsidy had a positive correlation with annual revenue and number of employees.
+*/
+
+*part g 
+/*
+Reduced form effect: Effect of score on revenue outcomes and number of employees.
+First-stage effect: Effect of score on number of firms that received subsidy.
+Therefore, LATE would be the discontinuity in the outcome divided by the discontinuity in the treatment, which is ultimately the reduced-form effect over the first-stage effect. You would interpret the treatment effect as how receiving a score of 750 or above affects revenue and number of employees through whether or not a firm recieves a subsidy.
+*/
