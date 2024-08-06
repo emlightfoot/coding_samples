@@ -1,0 +1,253 @@
+###########################################################
+# Code to download and clean Boston Police Department incidents data
+# Author: Emily Lightfoot
+# Date: June 2024
+###########################################################
+
+#0. Setup -------------------------------------------------
+from utils.download_utils import *
+from enums import DataType
+import requests
+import json
+import geopandas as gpd
+from arcgis.gis import GIS
+from shapely.geometry import Polygon
+import pandas as pd
+import os
+
+TYPE = DataType.INCIDENTS
+CITY = 'Boston'
+STATE = 'MA'
+
+# Setup Repository
+try:
+    # Setup Repository
+    with open("repo_info.txt", "r") as repo_info:
+        path_to_repo = repo_info.readline()
+    path_to_data = f"{path_to_repo}data/"
+    path_to_raw = f"{path_to_data}raw/"
+    path_to_processed = f"{path_to_data}processed/"
+except:
+    path_to_repo = f"/mnt/share/ekroselab/local_crime_data/"
+    path_to_data = f"{path_to_repo}data/"
+    path_to_raw = f"{path_to_data}raw/"
+    path_to_processed = f"{path_to_data}processed/"
+    os.chdir(path_to_repo)
+
+
+os.makedirs(path_to_raw, exist_ok = True)
+os.makedirs(path_to_processed, exist_ok = True)
+#1. Download the data -------------------------------------
+# Function to download a CSV file
+def download_csv_file(DataType, city, state, data_urls):
+    city = city.replace(" ", "_").lower()
+    state = state.replace(" ", "_").lower()
+
+    path_to_raw = os.path.join(DATABASE_PATH, 'raw', f'{city}_{state}', DataType.value)
+    path_to_processed = os.path.join(DATABASE_PATH, 'processed', f'{city}_{state}', DataType.value)
+
+    # Makes relevant directories for raw and processed data
+    make_directories(path_to_raw, path_to_processed)
+
+    # Open csv files
+    i = 0
+    for url in data_urls:
+        i += 1
+        response = requests.get(url)
+        df = response.content
+
+        if response.status_code == 200:
+            with open(os.path.join(path_to_raw, f'{city}_{state}_{DataType.value}_{i}.csv'), "ab") as f:
+                f.write(response.content)
+        else:
+            print("Response not successful")
+data_urls = ['https://data.boston.gov/dataset/6220d948-eae2-4e4b-8723-2dc8e67722a3/resource/792031bf-b9bb-467c-b118-fe795befdf00/download/tmpzr3l5bxw.csv',
+    'https://data.boston.gov/dataset/6220d948-eae2-4e4b-8723-2dc8e67722a3/resource/b6c4e2c3-7b1e-4f4a-b019-bef8c6a0e882/download/tmp3ochjtdc.csv', 
+    'https://data.boston.gov/dataset/6220d948-eae2-4e4b-8723-2dc8e67722a3/resource/64ad0053-842c-459b-9833-ff53d568f2e3/download/tmp3apxsafn.csv', 
+    'https://data.boston.gov/dataset/6220d948-eae2-4e4b-8723-2dc8e67722a3/resource/e86f8e38-a23c-4c1a-8455-c8f94210a8f1/download/tmpf_uzkqpk.csv', 
+    'https://data.boston.gov/dataset/6220d948-eae2-4e4b-8723-2dc8e67722a3/resource/34e0ae6b-8c94-4998-ae9e-1b51551fe9ba/download/tmp6w6ts2d7.csv', 
+    'https://data.boston.gov/dataset/6220d948-eae2-4e4b-8723-2dc8e67722a3/resource/be047094-85fe-4104-a480-4fa3d03f9623/download/tmpkd_w64k_.csv', 
+    'https://data.boston.gov/dataset/6220d948-eae2-4e4b-8723-2dc8e67722a3/resource/f4495ee9-c42c-4019-82c1-d067f07e45d2/download/tmpfap3hfze.csv', 
+    'https://data.boston.gov/dataset/6220d948-eae2-4e4b-8723-2dc8e67722a3/resource/313e56df-6d77-49d2-9c49-ee411f10cf58/download/tmpdfeo3qy2.csv', 
+    'https://data.boston.gov/dataset/6220d948-eae2-4e4b-8723-2dc8e67722a3/resource/b973d8cb-eeb2-4e7e-99da-c92938efc9c0/download/tmpa9unycb0.csv']
+download_csv_file(TYPE, CITY, STATE, data_urls)
+
+# Download police boundaries
+# https://www.arcgis.com/home/item.html?id=9a3a8c427add450eaf45a470245680fc
+def download_arcgis(public_data_item_id):
+    """
+    Feed the ARCGIS ID and get a dataframe
+    """
+    # ARCGIS, code from: https://developers.arcgis.com/python/guide/download-data/
+    # Start the connection
+    gis = GIS()
+    # `ContentManager.get` will return `None` if there is no Item with our ID
+    data_item = gis.content.get(public_data_item_id)
+    assert data_item != None
+    # See https://developers.arcgis.com/python/api-reference/arcgis.features.toc.html#featurelayer
+
+    if data_item.layers == []:
+        df = data_item.tables[0].query(as_df=True)
+    else:
+        df = data_item.layers[0].query(as_df=True)
+    return df
+# Download the boundary
+bound = download_arcgis('9a3a8c427add450eaf45a470245680fc')
+
+# Some rings have multiple geometries
+bound['rings'] = bound.SHAPE.apply(lambda x: x['rings'])
+bound['nid'] = bound.rings.apply(lambda x: len(x))
+
+# Fix the geometry
+store = bound.copy()
+store['geometry'] = store.rings.apply(lambda x: Polygon(eval(str(x))[0]))
+if bound.nid.max() != 1:
+    for i in range(bound.nid.max()):
+        print(i)
+        batch = bound.loc[bound.nid > i+1].copy()
+        batch['geometry'] = batch.rings.apply(lambda x: Polygon(eval(str(x))[i+1]))
+        store = pd.concat([store, batch])
+    assert store.shape[0] == bound.nid.sum()    
+
+gdf = gpd.GeoDataFrame(store.drop(columns = ['geometry']), geometry=store['geometry'], crs = 2249)
+gdf = gdf.to_crs("4326")
+
+# Keep only the geometry column
+gdf = gdf[['geometry']]
+
+# Union all the polygons into one
+unioned_geom = gdf.unary_union
+
+# Convert the resulting geometry to a GeoDataFrame
+gdf = gpd.GeoDataFrame(geometry=[unioned_geom], crs = '4326')
+
+# Add a column with the city name
+gdf['city'] = 'Boston'
+gdf['state'] = 'MA'
+
+# Save as pickle file to processed
+gdf.to_pickle(os.path.join(path_to_data + 'police_boundaries/processed/boston_ma_boundary.pkl.gz'))
+
+#2. Clean the data -----------------------------------
+# Extract dfs into separate objects and prints the head of each df
+df_list = get_dfs(TYPE, CITY, STATE)
+
+# If there are specific changes to make those can be made here by referencing the df in the array
+df_list = pd.concat(df_list)
+
+df = df_list.copy()
+
+# Drop rows with no information
+num_rows_before = len(df)
+df = df[df['OCCURRED_ON_DATE'] != 'OCCURRED_ON_DATE']
+num_rows_after = len(df)
+num_rows_dropped = num_rows_before - num_rows_after
+print("\nNumber of rows dropped:", num_rows_dropped)
+
+# Fix occurred on date
+df['fix_dates'] = df.OCCURRED_ON_DATE.apply(lambda x: len(x))
+df.loc[df.fix_dates == 22, 'OCCURRED_ON_DATE'] = df.loc[df.fix_dates == 22, 'OCCURRED_ON_DATE'].apply(lambda x: x[:-3])
+
+# Fixing the CJARS
+df['cjar_fix'] = df['OFFENSE_DESCRIPTION'].fillna("").str.upper()
+
+# View unique list of offense descriptions
+#df['cjar_fix'].unique()
+
+# Replace 'MISSING PERSON' with 'NOCJAR - Not an incident'
+df['check'] = df.cjar_fix.apply(lambda x: re.findall("MISSING PERSON", str(x).upper()) != [])
+df.loc[(df.check), 'cjar_fix'] = 'NOCJAR - Not an incident'
+
+# Replace 'PROPERTY' with 'NOCJAR - Not an incident'
+df['check'] = df.cjar_fix.apply(lambda x: re.findall("PROPERTY", str(x).upper()) != []) 
+df.loc[(df.check), 'cjar_fix'] = 'NOCJAR - Not an incident'
+
+# Replace 'PRISONER' with 'NOCJAR - Not an incident'
+df['check'] = df.cjar_fix.apply(lambda x: re.findall("PRISONER", str(x).upper()) != []) 
+df.loc[(df.check), 'cjar_fix'] = 'NOCJAR - Not an incident'
+
+# Replace 'FIRE REPORT' with 'NOCJAR - Not an incident'
+df['check'] = df.cjar_fix.apply(lambda x: re.findall("FIRE REPORT", str(x).upper()) != []) 
+df.loc[(df.check), 'cjar_fix'] = 'NOCJAR - Not an incident'
+
+# Replace 'RECOVERED' with 'NOCJAR - Not an incident'
+df['check'] = df.cjar_fix.apply(lambda x: re.findall("RECOVERED", str(x).upper()) != []) 
+df.loc[(df.check), 'cjar_fix'] = 'NOCJAR - Not an incident'
+
+# Replace 'SICK' with 'NOCJAR - Not an incident'
+df['check'] = df.cjar_fix.apply(lambda x: re.findall("SICK", str(x).upper()) != [])
+df.loc[(df.check), 'cjar_fix'] = 'NOCJAR - Not an incident'
+
+# Replace 'OTHER' with 'NOCJAR'
+df['check'] = df.cjar_fix.apply(lambda x: re.findall("OTHER PART", str(x).upper()) != [])
+df.loc[(df.check), 'cjar_fix'] = 'NOCJAR'
+
+# Replace descriptions
+df['cjar_fix'].replace({'INVESTIGATE PERSON': 'NOCJAR - Not an incident',
+                                'OTHER OFFENSE': 'NOCJAR',
+                                'SICK/INJURED/MEDICAL - PERSON': 'NOCJAR - Not an incident',
+                                'TOWED MOTOR VEHICLE': 'NOCJAR - Not an incident',
+                                'WARRANT ARREST': 'NOCJAR',
+                                'MIGRATED REPORT - DEATH INVESTIGATION': 'NOCJAR - Not an incident',
+                                'ANIMAL INCIDENTS': 'NOCJAR - Not an incident',
+                                'INVESTIGATION FOR ANOTHER AGENCY': 'NOCJAR',
+                                'CHILD REQUIRING ASSISTANCE (FOMERLY CHINS)': 'NOCJAR - Not an incident',
+                                'MIGRATED REPORT - AUTO LAW VIOLATION': 'NOCJAR - Not an incident',
+                                'KILLING OF FELON BY POLICE': 'NOCJAR - Not an incident',
+                                'SEARCH WARRANT': 'NOCJAR - Not an incident',
+                                'ANIMAL INCIDENTS (DOG BITES, LOST DOG, ETC)': 'NOCJAR - Not an incident',
+                                'ANIMAL CONTROL - DOG BITES - ETC.': 'NOCJAR - Not an incident',
+                                'ROBBERY - CAR JACKING': 'NOCJAR - Not an incident',
+                                'BIOLOGICAL THREATS': 'NOCJAR - Not an incident',
+                                'SERVICE TO OTHER PD INSIDE OF MA.': 'NOCJAR',
+                                'SERVICE TO OTHER AGENCY': 'NOCJAR',
+                                'M/V ACCIDENT - PERSONAL INJURY': 'NOCJAR - Not an incident',
+                                'M/V ACCIDENT - OTHER': 'NOCJAR',
+                                'M/V PLATES - LOST': 'NOCJAR - Not an incident',
+                                'SUDDEN DEATH': 'NOCJAR',
+                                'DEATH INVESTIGATION': 'NOCJAR',
+                                'MIGRATED REPORT - INVESTIGATE PERSON': 'NOCJAR',
+                                'M/V ACCIDENT - OTHER': 'NOCJAR - Not an incident',
+                                'WARRANT ARREST - OUTSIDE OF BOSTON WARRANT': 'NOCJAR',
+                                'LANDLORD - TENANT': 'NOCJAR',
+                                'LANDLORD - TENANT SERVICE': 'NOCJAR - Not an incident',
+                                'VIOLATION - CITY ORDINANCE': 'NOCJAR',
+                                'SUICIDE / SUICIDE ATTEMPT': 'NOCJAR - Not an incident',
+                                'M/V ACCIDENT - OTHER CITY VEHICLE': 'NOCJAR - Not an incident',
+                                'M/V ACCIDENT - POLICE VEHICLE': 'NOCJAR - Not an incident',
+                                'M/V ACCIDENT - INVOLVING PEDESTRIAN - NO INJURY': 'NOCJAR - Not an incident',
+                                'M/V ACCIDENT - INVOLVING BICYCLE - NO INJURY ': 'NOCJAR - Not an incident',
+                                'VAL - OPERATING AFTER REV/SUSP.': 'Traffic offenses - minor',
+                                'BALLISTICS EVIDENCE/FOUND': 'NOCJAR',
+                                'RECOVERED - MV RECOVERED IN BOSTON (STOLEN OUTSIDE BOSTON)': 'NOCJAR - Not an incident',
+                                'RECOVERED - MV RECOVERED IN BOSTON (STOLEN IN BOSTON) MUST BE SUPPLEMENTAL': 'NOCJAR - Not an incident',
+                                'RECOVERED STOLEN PLATE': 'NOCJAR - Not an incident',
+                                'WEAPON VIOLATION - CARRY/ POSSESSING/ SALE/ TRAFFICKING/ OTHER': ' Weapon offense',
+                                'VAL - OPERATING W/O AUTHORIZATION LAWFUL': 'Traffic offenses - minor',
+                                'VIOLATION - CITY ORDINANCE': 'Public order offense',
+                                'SERVICE TO OTHER PD OUTSIDE OF MA.': 'NOCJAR'
+                                }, inplace = True)
+
+df_list = [df]
+# Format each df
+formats = [
+    # df 0
+    {
+        'date': ['OCCURRED_ON_DATE'],
+        'time': 'HOUR',
+        'address': ['STREET'],
+        'latitude': 'Lat',
+        'longitude': 'Long',
+        'geometry': '',
+        'id': 'INCIDENT_NUMBER',
+        'arrest': [''],
+        'off_desc': ['OFFENSE_DESCRIPTION'],
+        'nibrs': '',
+        'ucr': '',
+        'fbi': '',
+        'crime_cols': [''],
+        'start_date': ''
+    }
+]
+
+clean_dfs(TYPE, CITY, STATE, AGENCY_TYPE, formats, df_list)
