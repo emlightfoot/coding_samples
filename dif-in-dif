@@ -1,0 +1,498 @@
+library(tidyverse)
+library(stargazer)
+library(readr)
+
+###----load firm data----
+tx_zip_prefix = c(750, 751, 752, 753, 754, 760, 761, 762, 764, 766, 770, 772, 773, 774, 775, 776, 789, 780, 781, 782, 786, 788, 733, 765, 787) #use first three digits of zips
+
+data_3 <- read_csv("BusinessData2013.csv", col_types = cols_only(Company = "c",
+                                                                 ZipCode = "c",
+                                                                 Location_Employee_Size_Code = "c",
+                                                                 Location_Sales_Volume_Code = "c",
+                                                                 Primary_SIC_Code = "c",
+                                                                 Primary_NAICS_Code = "c",
+                                                                 Employee_Size_Location = "c",
+                                                                 Subsidiary_Number = "c",
+                                                                 Parent_Number = "c",
+                                                                 Latitude = "n",
+                                                                 Longitude = "n")) %>%
+  mutate("year" = 1) %>%
+  mutate(city = str_sub(ZipCode, end = 3)) %>%
+  filter(city %in% tx_zip_prefix) %>%
+  mutate(franchise = !is.na(Subsidiary_Number) | !is.na(Parent_Number)) %>%
+  select(-city, -Subsidiary_Number, -Parent_Number)
+
+data_4 <- read_csv("BusinessData2014.csv", col_types = cols_only(Company = "c",
+                                                                 ZipCode = "c",
+                                                                 Location_Employee_Size_Code = "c",
+                                                                 Location_Sales_Volume_Code = "c",
+                                                                 Primary_SIC_Code = "c",
+                                                                 Primary_NAICS_Code = "c",
+                                                                 Employee_Size_Location = "c",
+                                                                 Subsidiary_Number = "c",
+                                                                 Parent_Number = "c",
+                                                                 Latitude = "n",
+                                                                 Longitude = "n")) %>%
+  mutate("year" = 2) %>%
+  mutate(city = str_sub(ZipCode, end = 3)) %>%
+  filter(city %in% tx_zip_prefix) %>%
+  mutate(franchise = !is.na(Subsidiary_Number) | !is.na(Parent_Number)) %>%
+  select(-city, -Subsidiary_Number, -Parent_Number)
+
+data_5 <- read_csv("BusinessData2015.csv", col_types = cols_only(Company = "c",
+                                                                 ZipCode = "c",
+                                                                 Location_Employee_Size_Code = "c",
+                                                                 Location_Sales_Volume_Code = "c",
+                                                                 Primary_SIC_Code = "c",
+                                                                 Primary_NAICS_Code = "c",
+                                                                 Employee_Size_Location = "c",
+                                                                 Subsidiary_Number = "c",
+                                                                 Parent_Number = "c",
+                                                                 Latitude = "n",
+                                                                 Longitude = "n")) %>%
+  mutate("year" = 3) %>%
+  mutate(city = str_sub(ZipCode, end = 3)) %>%
+  filter(city %in% tx_zip_prefix) %>%
+  mutate(franchise = !is.na(Subsidiary_Number) | !is.na(Parent_Number)) %>%
+  select(-city, -Subsidiary_Number, -Parent_Number)
+
+data_6 <- read_csv("BusinessData2016.csv", col_types = cols_only(Company = "c",
+                                                                 ZipCode = "c",
+                                                                 Location_Employee_Size_Code = "c",
+                                                                 Location_Sales_Volume_Code = "c",
+                                                                 Primary_SIC_Code = "c",
+                                                                 Primary_NAICS_Code = "c",
+                                                                 Employee_Size_Location = "c",
+                                                                 Subsidiary_Number = "c",
+                                                                 Parent_Number = "c",
+                                                                 Latitude = "n",
+                                                                 Longitude = "n")) %>%
+  mutate("year" = 4) %>%
+  mutate(city = str_sub(ZipCode, end = 3)) %>%
+  filter(city %in% tx_zip_prefix) %>%
+  mutate(franchise = !is.na(Subsidiary_Number) | !is.na(Parent_Number)) %>%
+  select(-city, -Subsidiary_Number, -Parent_Number)
+
+data_7 <- read_csv("BusinessData2017.csv", col_types = cols_only(Company = "c",
+                                                                 ZipCode = "c",
+                                                                 Location_Employee_Size_Code = "c",
+                                                                 Location_Sales_Volume_Code = "c",
+                                                                 Primary_SIC_Code = "c",
+                                                                 Primary_NAICS_Code = "c",
+                                                                 Employee_Size_Location = "c",
+                                                                 Subsidiary_Number = "c",
+                                                                 Parent_Number = "c",
+                                                                 Latitude = "n",
+                                                                 Longitude = "n")) %>%
+  mutate("year" = 5) %>%
+  mutate(city = str_sub(ZipCode, end = 3)) %>%
+  filter(city %in% tx_zip_prefix) %>%
+  mutate(franchise = !is.na(Subsidiary_Number) | !is.na(Parent_Number)) %>%
+  select(-city, -Subsidiary_Number, -Parent_Number)
+
+data_8 <- read_csv("BusinessData2018.csv", col_types = cols_only(Company = "c",
+                                                                 ZipCode = "c",
+                                                                 Location_Employee_Size_Code = "c",
+                                                                 Location_Sales_Volume_Code = "c",
+                                                                 Primary_SIC_Code = "c",
+                                                                 Primary_NAICS_Code = "c",
+                                                                 Employee_Size_Location = "c",
+                                                                 Subsidiary_Number = "c",
+                                                                 Parent_Number = "c",
+                                                                 Latitude = "n",
+                                                                 Longitude = "n")) %>%
+  mutate("year" = 6) %>%
+  mutate(city = str_sub(ZipCode, end = 3)) %>%
+  filter(city %in% tx_zip_prefix) %>%
+  mutate(franchise = !is.na(Subsidiary_Number) | !is.na(Parent_Number)) %>%
+  select(-city, -Subsidiary_Number, -Parent_Number)
+
+data_9 <- read_csv("BusinessData2019.csv", col_types = cols_only(Company = "c",
+                                                                 ZipCode = "c",
+                                                                 Location_Employee_Size_Code = "c",
+                                                                 Location_Sales_Volume_Code = "c",
+                                                                 Primary_SIC_Code = "c",
+                                                                 Primary_NAICS_Code = "c",
+                                                                 Employee_Size_Location = "c",
+                                                                 Subsidiary_Number = "c",
+                                                                 Parent_Number = "c",
+                                                                 Latitude = "n",
+                                                                 Longitude = "n")) %>%
+  mutate("year" = 7) %>%
+  mutate(city = str_sub(ZipCode, end = 3)) %>%
+  filter(city %in% tx_zip_prefix) %>%
+  mutate(franchise = !is.na(Subsidiary_Number) | !is.na(Parent_Number)) %>%
+  select(-city, -Subsidiary_Number, -Parent_Number)
+
+data_0 <- read_csv("BusinessData2020.csv", col_types = cols_only(Company = "c",
+                                                                 ZipCode = "c",
+                                                                 Location_Employee_Size_Code = "c",
+                                                                 Location_Sales_Volume_Code = "c",
+                                                                 Primary_SIC_Code = "c",
+                                                                 Primary_NAICS_Code = "c",
+                                                                 Employee_Size_Location = "c",
+                                                                 Subsidiary_Number = "c",
+                                                                 Parent_Number = "c",
+                                                                 Latitude = "n",
+                                                                 Longitude = "n")) %>%
+  mutate("year" = 8) %>%
+  mutate(city = str_sub(ZipCode, end = 3)) %>%
+  filter(city %in% tx_zip_prefix) %>%
+  mutate(franchise = !is.na(Subsidiary_Number) | !is.na(Parent_Number)) %>%
+  select(-city, -Subsidiary_Number, -Parent_Number)
+
+####----STEP TWO----
+#create NewID variable which is a unique identifier per firm across all years, add this variable to dfs
+#input: 8 dfs of yearly firm data
+#output: 8 dfs of the yearly firm data PLUS each individual firm's respective NewID
+
+#create a NAICS_sector var since some companies' NAICS code slightly change across years, but sector should remain the same
+generate_NAICS <- function(df){
+  df <- df %>%
+    mutate(NAICS_sector = str_sub(Primary_NAICS_Code, end = 3))
+}
+
+#round lat and long to account for them changing (slightly) over the years for a single firm
+generate_round <- function(df){
+  df <- df %>%
+    mutate(LatRound = round(Latitude, digits = 1)) %>%
+    mutate(LongRound = round(Longitude, digits = 1))
+}
+
+data_3 <- generate_NAICS(data_3) %>% generate_round()
+data_4 <- generate_NAICS(data_4) %>% generate_round()
+data_5 <- generate_NAICS(data_5) %>% generate_round()
+data_6 <- generate_NAICS(data_6) %>% generate_round()
+data_7 <- generate_NAICS(data_7) %>% generate_round()
+data_8 <- generate_NAICS(data_8) %>% generate_round()
+data_9 <- generate_NAICS(data_9) %>% generate_round()
+data_10 <- generate_NAICS(data_0) %>% generate_round()
+
+mergedata <- rbind(data_3,data_4,data_5, data_6, data_7, data_8, data_9, data_10)
+## SAVE MERGED DATA
+
+#create unique NewID based off a company's latitude, longitude, naics sector, zip code, and company name
+mergedata <- mergedata %>%
+  group_by(LatRound,LongRound,NAICS_sector, ZipCode, Company) %>%
+  mutate(NewID = cur_group_id())
+df #idk what this does should probably see about that
+
+#merge the NewIDs with datasets
+df_3 <- data_3 %>%
+  inner_join(mergedata, by =c("Company",
+                              "ZipCode",
+                              "Location_Employee_Size_Code",
+                              "Location_Sales_Volume_Code",
+                              "Latitude",
+                              "Longitude",
+                              "Primary_NAICS_Code",
+                              "Primary_SIC_Code",
+                              "Employee_Size_Location",
+                              "year",
+                              "franchise",
+                              "NAICS_sector",
+                              "LongRound",
+                              "LatRound"))
+
+df_4 <- data_4 %>%
+  inner_join(mergedata, by =c("Company",
+                              "ZipCode",
+                              "Location_Employee_Size_Code",
+                              "Location_Sales_Volume_Code",
+                              "Latitude",
+                              "Longitude",
+                              "Primary_NAICS_Code",
+                              "Primary_SIC_Code",
+                              "Employee_Size_Location",
+                              "year",
+                              "franchise",
+                              "NAICS_sector",
+                              "LongRound",
+                              "LatRound"))
+
+df_5 <- data_5 %>%
+  inner_join(mergedata, by =c("Company",
+                              "ZipCode",
+                              "Location_Employee_Size_Code",
+                              "Location_Sales_Volume_Code",
+                              "Latitude",
+                              "Longitude",
+                              "Primary_NAICS_Code",
+                              "Primary_SIC_Code",
+                              "Employee_Size_Location",
+                              "year",
+                              "franchise",
+                              "NAICS_sector",
+                              "LongRound",
+                              "LatRound"))
+
+df_6 <- data_6 %>%
+  inner_join(mergedata, by =c("Company",
+                              "ZipCode",
+                              "Location_Employee_Size_Code",
+                              "Location_Sales_Volume_Code",
+                              "Latitude",
+                              "Longitude",
+                              "Primary_NAICS_Code",
+                              "Primary_SIC_Code",
+                              "Employee_Size_Location",
+                              "year",
+                              "franchise",
+                              "NAICS_sector",
+                              "LongRound",
+                              "LatRound"))
+
+df_7 <- data_7 %>%
+  inner_join(mergedata, by =c("Company",
+                              "ZipCode",
+                              "Location_Employee_Size_Code",
+                              "Location_Sales_Volume_Code",
+                              "Latitude",
+                              "Longitude",
+                              "Primary_NAICS_Code",
+                              "Primary_SIC_Code",
+                              "Employee_Size_Location",
+                              "year",
+                              "franchise",
+                              "NAICS_sector",
+                              "LongRound",
+                              "LatRound"))
+
+df_8 <- data_8 %>%
+  inner_join(mergedata, by =c("Company",
+                              "ZipCode",
+                              "Location_Employee_Size_Code",
+                              "Location_Sales_Volume_Code",
+                              "Latitude",
+                              "Longitude",
+                              "Primary_NAICS_Code",
+                              "Primary_SIC_Code",
+                              "Employee_Size_Location",
+                              "year",
+                              "franchise",
+                              "NAICS_sector",
+                              "LongRound",
+                              "LatRound"))
+
+df_9 <- data_9 %>%
+  inner_join(mergedata, by =c("Company",
+                              "ZipCode",
+                              "Location_Employee_Size_Code",
+                              "Location_Sales_Volume_Code",
+                              "Latitude",
+                              "Longitude",
+                              "Primary_NAICS_Code",
+                              "Primary_SIC_Code",
+                              "Employee_Size_Location",
+                              "year",
+                              "franchise",
+                              "NAICS_sector",
+                              "LongRound",
+                              "LatRound"))
+
+df_0 <- data_0 %>%
+  inner_join(mergedata, by =c("Company",
+                              "ZipCode",
+                              "Location_Employee_Size_Code",
+                              "Location_Sales_Volume_Code",
+                              "Latitude",
+                              "Longitude",
+                              "Primary_NAICS_Code",
+                              "Primary_SIC_Code",
+                              "Employee_Size_Location",
+                              "year",
+                              "franchise",
+                              "NAICS_sector",
+                              "LongRound",
+                              "LatRound"))
+
+
+# Keep businesses that existed in 2013-2016; drop duplicate firms
+pre_harvey <- rbind(df_3,
+                    df_4,
+                    df_5,
+                    df_6,
+                    df_7,
+                    df_8,
+                    df_9,
+                    df_0)
+
+pre_harvey <- pre_harvey %>%
+  select(NewID) %>%
+  distinct()
+
+# Filter the 2017-2019 data to include only firms that were present in 2013-2016
+df_7 <- df_7 %>%
+  semi_join(pre_harvey, by = "NewID")
+
+df_8 <- df_8 %>%
+  semi_join(pre_harvey, by = "NewID")
+
+df_9 <- df_9 %>%
+  semi_join(pre_harvey, by = "NewID")
+
+df_0 <- df_0 %>%
+  semi_join(pre_harvey, by = "NewID")
+#filter for unique
+df_3 <- df_3[!duplicated(df_3$NewID), ]
+df_4 <- df_4[!duplicated(df_4$NewID), ]
+df_5 <- df_5[!duplicated(df_5$NewID), ]
+df_6 <- df_6[!duplicated(df_6$NewID), ]
+df_7 <- df_7[!duplicated(df_7$NewID), ]
+df_8 <- df_8[!duplicated(df_8$NewID), ]
+df_9 <- df_9[!duplicated(df_9$NewID), ]
+df_10 <- df_0[!duplicated(df_0$NewID), ]
+##----STEP 3----
+#input: df_x which includes firm data and unique id
+#output: full_dfs with their binary exit variable
+
+#create a binary exit variable; the last year a firm is present in the data: exit = 1
+join_firm <- function(df_1, df_2){
+  
+  bothdata <- df_1 %>%
+    inner_join(df_2, by = "NewID")
+  continuingstores <- bothdata$NewID
+  
+  df_1 <- df_1 %>%
+    mutate(exit = ifelse(NewID %in% continuingstores,0,1))
+}
+
+#antijoin (same as join_firm) but works quicker given the number of observations
+anti_join_firm <- function(df_1, df_2){
+  
+  bothdata <- df_1 %>%
+    anti_join(df_2, by = "NewID")
+  anticontinuingstores <- bothdata$NewID
+  
+  dataframe_1 <- df_1 %>%
+    mutate(exit = ifelse(NewID %in% anticontinuingstores,1,0))
+}
+
+full_df3 <- join_firm(df_3, df_4)
+full_df4 <- join_firm(df_4, df_5)
+full_df5 <- join_firm(df_5, df_6)
+full_df6 <- join_firm(df_6, df_7)
+full_df7 <- anti_join_firm(df_7, df_8)
+full_df8 <- anti_join_firm(df_8, df_9)
+full_df9 <- anti_join_firm(df_9, df_10)
+
+full_df <- rbind(full_df3,
+                 full_df4,
+                 full_df5,
+                 full_df6,
+                 full_df7,
+                 full_df8,
+                 full_df9)
+
+##----load water level data----
+# merge FEMA Hurricane Harvey flood water level data with firm dataset
+water <- read.csv("cleaned_water_lvls.csv") %>%
+  select(-X, -year, -Address_Line_1)
+
+water[!duplicated(water),]
+waterdistinct <- distinct(water)
+
+full_df <- full_df %>%
+  mutate(if_2017 = ifelse(year == 5,1,0))
+
+firm_water_df <- full_df %>%
+  filter(year == 5) %>%
+  left_join(waterdistinct, by = c("Latitude","Longitude"))
+
+firm_nonwater_df <- full_df %>%
+  filter(year != 5) %>%
+  mutate(water_lvl = 0)
+
+water_lvl_df <- rbind(firm_nonwater_df,firm_water_df)
+
+##----baseline regression----
+##create binary variables for top 5 industries (62, 81, 54, 44, 99)
+water_lvl_df <- water_lvl_df %>%
+  mutate(industry = str_sub(Primary_NAICS_Code, end = 2),
+         health = ifelse(industry==62,1,0),
+         other = ifelse(industry==81,1,0),
+         science = ifelse(industry==54,1,0),
+         retail = ifelse(industry==44,1,0),
+         non = ifelse(industry==99,1,0))
+
+flooding_2017 <- water_lvl_df %>% filter(year == 5) %>% select(NewID, water_lvl)
+## 2018 treated
+water_lvl_df_2018 <- water_lvl_df %>%
+  filter(year==6)
+
+# Join year 5 data to year 6 based on NewID
+# Left join year 5 data to year 6 based on NewID and rename the water_lvl from year 5 to avoid conflicts
+water_lvl_df_2018 <- water_lvl_df_2018 %>%
+  inner_join(flooding_2017, by ="NewID")
+
+water_lvl_df_2018_t <- water_lvl_df_2018 %>%
+  mutate(water_lvl = water_lvl.y) %>%
+  select(-water_lvl.x, -water_lvl.y) %>%
+  filter(water_lvl !=is.na(water_lvl) & water_lvl!=0) 
+
+water_lvl_df_2018_t <- water_lvl_df_2018_t %>%
+  mutate(Employee_Size_Location = as.integer(Employee_Size_Location))
+
+b1 <- lm(formula= exit~water_lvl, water_lvl_df_2018_t)
+b2 <- lm(formula= exit~water_lvl + health + other + science + retail + non + franchise + Employee_Size_Location, water_lvl_df_2018_t)
+
+## 2019 treated
+water_lvl_df_2019_t <- water_lvl_df %>%
+  filter(year==7)
+
+# Join year 5 data to year 6 based on NewID
+# Left join year 5 data to year 6 based on NewID and rename the water_lvl from year 5 to avoid conflicts
+water_lvl_df_2019_t <- water_lvl_df_2019_t %>%
+  inner_join(flooding_2017, by ="NewID")
+
+water_lvl_df_2019_t <- water_lvl_df_2019_t %>%
+  mutate(water_lvl = water_lvl.y) %>%
+  select(-water_lvl.x, -water_lvl.y) %>%
+  filter(water_lvl !=is.na(water_lvl) & water_lvl!=0)
+
+water_lvl_df_2019_t <- water_lvl_df_2019_t %>%
+  mutate(Employee_Size_Location = as.integer(Employee_Size_Location))
+
+b3 <- lm(formula= exit~water_lvl, water_lvl_df_2019_t)
+b4 <- lm(formula= exit~water_lvl + health + other + science + retail + non + franchise + Employee_Size_Location, water_lvl_df_2019_t)
+## either 2019 or 2018 treated
+water_lvl_df_1819_t <- rbind(water_lvl_df_2018_t,water_lvl_df_2019_t)
+
+b5 <- lm(formula= exit~water_lvl, water_lvl_df_2019_t)
+b6 <- lm(formula= exit~water_lvl + health + other + science + retail + non + franchise + Employee_Size_Location, water_lvl_df_2019_t)
+
+#create table
+stargazer(b1, b2, b3, b4, b5, b6, type = "latex", column.sep.width = '.1pt' , out = "baseline_regressions.tex")
+##----dif-in-dif----
+##WATER BINARY
+#2018
+water_lvl_df_2018 <- water_lvl_df_2018 %>%
+  mutate(water_lvl = water_lvl.y) %>%
+  select(-water_lvl.x, -water_lvl.y)
+
+water_lvl_df_did <- water_lvl_df %>%
+  filter(year >= 1 & year <= 5)
+
+did8 <- rbind(water_lvl_df_did, water_lvl_df_2018)
+
+did8 <- did8 %>%
+  mutate(water_lvl = ifelse(year == 5, 0, water_lvl))
+
+did8 <- did8 %>%
+  mutate(post = ifelse(year == 6, 1, 0),
+         treat = ifelse(water_lvl == 0 | is.na(water_lvl), 0, 1))
+
+did1 = lm(formula = exit ~treat*post, data = did8)
+summary(did1)
+did1 = lm(formula = exit ~ treat + post + treat*post + health + other, data = did8)
+##----summary stats----
+Firm_and_Flooding_treated %>% summary()
+
+#healthcare
+Firm_and_Flooding_treated %>% mutate(Primary_NAICS_Code = str_sub(Primary_NAICS_Code, end = 2)) %>% filter(Primary_NAICS_Code == 62) %>% summary() 
+
+#food services
+Firm_and_Flooding_treated %>% mutate(Primary_NAICS_Code = str_sub(Primary_NAICS_Code, end = 2)) %>% filter(Primary_NAICS_Code == 72) %>% summary()
+
+#Professional, Scientific, and Technical Services
+Firm_and_Flooding_treated %>% mutate(Primary_NAICS_Code = str_sub(Primary_NAICS_Code, end = 2)) %>% filter(Primary_NAICS_Code == 54) %>% summary()
