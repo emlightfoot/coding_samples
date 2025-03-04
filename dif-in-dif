@@ -463,28 +463,70 @@ b6 <- lm(formula= exit~water_lvl + health + other + science + retail + non + fra
 
 #create table
 stargazer(b1, b2, b3, b4, b5, b6, type = "latex", column.sep.width = '.1pt' , out = "baseline_regressions.tex")
-##----dif-in-dif----
-##WATER BINARY
-#2018
-water_lvl_df_2018 <- water_lvl_df_2018 %>%
+##----dif-in-dif with binary water----
+#Base did dataframe
+water_lvl_df_2017 <- water_lvl_df %>%
+  filter(year==5)
+
+water_lvl_df_mergewater <- water_lvl_df %>%
+  inner_join(flooding_2017, by ="NewID")
+
+water_lvl_df_mergewater <- water_lvl_df_mergewater %>%
   mutate(water_lvl = water_lvl.y) %>%
   select(-water_lvl.x, -water_lvl.y)
 
-water_lvl_df_did <- water_lvl_df %>%
-  filter(year >= 1 & year <= 5)
+base_did <- rbind(water_lvl_df_mergewater, water_lvl_df_2017)
 
-did8 <- rbind(water_lvl_df_did, water_lvl_df_2018)
-
-did8 <- did8 %>%
-  mutate(water_lvl = ifelse(year == 5, 0, water_lvl))
+base_did <- base_did %>%
+  mutate(Employee_Size_Location = as.integer(Employee_Size_Location))
+#2018
+did8 <- base_did %>%
+  filter(year >= 1 & year <= 6)
 
 did8 <- did8 %>%
   mutate(post = ifelse(year == 6, 1, 0),
          treat = ifelse(water_lvl == 0 | is.na(water_lvl), 0, 1))
 
 did1 = lm(formula = exit ~treat*post, data = did8)
-summary(did1)
-did1 = lm(formula = exit ~ treat + post + treat*post + health + other, data = did8)
+
+did2 = lm(formula = exit ~ treat*post + health + other + science + retail + non + franchise + Employee_Size_Location, data = did8)
+
+#2019
+did9 <- base_did %>%
+  mutate(post = ifelse(year == 7, 1, 0),
+         treat = ifelse(water_lvl == 0 | is.na(water_lvl), 0, 1))
+
+did3 = lm(formula = exit ~treat*post, data = did9)
+
+did4 = lm(formula = exit ~ treat*post + health + other + science + retail + non + franchise + Employee_Size_Location, data = did9)
+
+#2018-2019
+did89 <- base_did %>%
+  mutate(post = ifelse(year %in% c(6,7), 1, 0),
+         treat = ifelse(water_lvl == 0 | is.na(water_lvl), 0, 1))
+
+did5 = lm(formula = exit ~treat*post, data = did89)
+
+did6 = lm(formula = exit ~ treat*post + health + other + science + retail + non + franchise + Employee_Size_Location, data = did89)
+
+##make table
+stargazer(did1, did2, did3, did4, did5, did6, type = "latex", column.sep.width = '.1pt' , out = "did_binary_regressions.tex")
+
+##----dif-in-dif with continuous water----
+#2018
+did7 = lm(formula = exit ~post*water_lvl, data = did8)
+
+did8 = lm(formula = exit ~ water_lvl*post + health + other, data = did8)
+
+#2019
+did9 = lm(formula = exit ~water_lvl*post, data = did9)
+
+did10 = lm(formula = exit ~ water_lvl*post + health + other, data = did9)
+
+#2018-2019
+did11 = lm(formula = exit ~water_lvl*post, data = did89)
+
+did12 = lm(formula = exit ~ water_lvl*post + health + other, data = did89)
 ##----summary stats----
 Firm_and_Flooding_treated %>% summary()
 
